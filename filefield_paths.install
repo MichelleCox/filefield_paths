@@ -1,53 +1,26 @@
 <?php
+
 /**
  * @file
  * Install, update and uninstall functions for the File (Field) Paths module.
  */
 
 /**
- * Implements hook_schema_alter().
- *
- * @param $schema
- *   The system-wide schema
- */
-function filefield_paths_schema_alter(&$schema) {
-  $schema['file_managed']['fields']['origname'] = array(
-    'description' => 'Original name of the file.',
-    'type' => 'varchar',
-    'length' => 255,
-    'not null' => TRUE,
-    'default' => '',
-  );
-}
-
-/**
  * Implements hook_install().
  */
 function filefield_paths_install() {
-  // Add origname field to {file_managed}, and populate with the current
-  // filenames.
-  db_add_field('file_managed', 'origname', array(
-    'description' => 'Original name of the file with no path components. Used by the filefield_paths module.',
-    'type' => 'varchar',
-    'length' => 255,
-    'not null' => TRUE,
-    'default' => '',
-  ));
-  db_update('file_managed')
-    ->expression('origname', 'filename')
-    ->execute();
+  // Create field storage for the 'origname' base field.
+  $entity_manager = \Drupal::entityManager();
+  $definition = $entity_manager->getFieldStorageDefinitions('file')['origname'];
+  $entity_manager->onFieldStorageDefinitionCreate($definition);
 }
 
 /**
  * Implements hook_uninstall().
  */
 function filefield_paths_uninstall() {
-  db_drop_field('file_managed', 'origname');
+  $entity_manager = \Drupal::entityManager();
+  $definition = $entity_manager->getLastInstalledFieldStorageDefinitions('file')['origname'];
+  $entity_manager->onFieldStorageDefinitionDelete($definition);
 }
 
-/**
- * Implements hook_update_last_removed().
- */
-function hook_update_last_removed() {
-  return 7107;
-}

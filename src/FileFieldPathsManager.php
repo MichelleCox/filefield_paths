@@ -59,7 +59,7 @@ class FileFieldPathsManager {
     $this->fieldPathSettings = $settings;
   }
 
-  /*
+  /**
    * Finds all the file based fields on a content entity and sends them off
    * to be processed.
    */
@@ -100,7 +100,7 @@ class FileFieldPathsManager {
     if ($this->fieldPathSettings['enabled']) {
 
       // Get the machine name of the field.
-      $field_name = $field_info->field_name;
+      $field_name = $field_info->getName();
 
       // Go through each item on the field.
       foreach ($container_entity->{$field_name} as $item) {

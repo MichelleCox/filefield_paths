@@ -34,6 +34,16 @@ function filefield_paths_form_field_ui_field_edit_form_alter(array &$form, FormS
 }
 
 /**
+ * Implements hook_ENTITY_TYPE_presave().
+ */
+function filefield_paths_file_presave(Drupal\file\FileInterface $file) {
+  // Store original filename in the database.
+  if ($file->origname->isEmpty()) {
+    $file->origname = $file->getFilename();
+  }
+}
+
+/**
  * Implements hook_entity_insert().
  */
 function filefield_paths_entity_insert(EntityInterface $entity) {
@@ -103,17 +113,6 @@ function filefield_paths_form_submit($form, &$form_state) {
   */
 }
 
-/**
- * Implements hook_file_presave().
- */
-function filefield_paths_file_presave($file) {
-  // @TODO: Original code kept for reference until it is absorbed.
-  // Store original filename in the database.
-  if (empty($file->origname) && isset($file->filename)) {
-    $file->origname = $file->filename;
-  }
-}
-
 // @TODO: Find a better place for the token related stuff.
 // This was removed from token.inc as it was the last include file left that
 // hadn't been absorbed into other parts. It was put here until a better place
@@ -157,17 +156,19 @@ function filefield_paths_tokens($type, $tokens, array $data = array(), array $op
     foreach ($tokens as $name => $original) {
       switch ($name) {
         case 'ffp-name-only':
-          $info = pathinfo($file->filename);
+          $info = pathinfo($file->getFilename());
           $replacements[$original] = $info['filename'];
           break;
 
         case 'ffp-name-only-original':
-          $info = pathinfo($file->origname);
+          $origname = $file->origname->getValue()[0]['value'];
+          $info = pathinfo($origname);
           $replacements[$original] = $info['filename'];
           break;
 
         case 'ffp-extension-original':
-          $info = pathinfo($file->origname);
+          $origname = $file->origname->getValue()[0]['value'];
+          $info = pathinfo($origname);
           $replacements[$original] = isset($info['extension']) ? $info['extension'] : NULL;
           break;
       }

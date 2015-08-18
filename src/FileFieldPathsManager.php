@@ -1,39 +1,45 @@
 <?php
 
+/**
+ * @file
+ * Contains \Drupal\filefield_paths\FileFieldPathsManager.
+ */
+
 namespace Drupal\filefield_paths;
 
+use Drupal\Component\Transliteration\TransliterationInterface;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Config\Entity\ThirdPartySettingsInterface;
+use Drupal\Core\Utility\Token;
 use Drupal\file\FileInterface;
 
+/**
+ * Class FileFieldPathsManager provides field processing.
+ *
+ * @todo Processing should be cleaned up.
+ */
 class FileFieldPathsManager {
+
+  /**
+   * The token service.
+   *
+   * @var \Drupal\Core\Utility\Token
+   */
+  protected $token;
+
+  /**
+   * The transliteration service.
+   *
+   * @var \Drupal\Component\Transliteration\TransliterationInterface
+   */
+  protected $transliteration;
+
   /**
    * String cleaning service.
    *
-   * @var FileFieldPathsClean
+   * @var \Drupal\filefield_paths\FileFieldPathsClean
    */
   protected $cleanService;
-
-  /**
-   * Token handling service.
-   *
-   * @var FileFieldPathsToken
-   */
-  protected $tokenService;
-
-  /**
-   * Transliteration service.
-   *
-   * @var FileFieldPathsTransliterate
-   */
-  protected $transliterateService;
-
-  /**
-   * Content entity being processed.
-   *
-   * @var ContentEntityInterface
-   */
-  protected $contentEntity;
 
   /**
    * Holds the settings for the field being processed.
@@ -42,12 +48,20 @@ class FileFieldPathsManager {
    */
   protected $fieldPathSettings;
 
-  public function __construct(FileFieldPathsClean $clean,
-                              FileFieldPathsToken $token,
-                              FileFieldPathsTransliterate $transliterate) {
+  /**
+   * Constructs FileFieldPathsManager object.
+   *
+   * @param \Drupal\Core\Utility\Token $token
+   *   The token service.
+   * @param \Drupal\Component\Transliteration\TransliterationInterface $transliteration
+   *   The transliteration service.
+   * @param \Drupal\filefield_paths\FileFieldPathsClean $clean
+   *   The string clean library.
+   */
+  public function __construct(Token $token, TransliterationInterface $transliteration, FileFieldPathsClean $clean) {
+    $this->token = $token;
+    $this->transliteration = $transliteration;
     $this->cleanService = $clean;
-    $this->tokenService = $token;
-    $this->transliterateService = $transliterate;
   }
   
   /**
@@ -90,7 +104,8 @@ class FileFieldPathsManager {
   /**
    * Finds all the files on the field and sends them to be processed.
    *
-   * @param ThirdPartySettingsInterface $field_info
+   * @param \Drupal\Core\Entity\ContentEntityInterface $container_entity
+   * @param \Drupal\Core\Config\Entity\ThirdPartySettingsInterface $field_info
    */
   protected function processField(ContentEntityInterface $container_entity, ThirdPartySettingsInterface $field_info) {
     // Retrieve the settings we added to the field.
@@ -123,20 +138,21 @@ class FileFieldPathsManager {
       // Retrieve the path/name strings with the tokens from settings.
       $tokenized_path = $this->fieldPathSettings['filepath'];
       $tokenized_filename = $this->fieldPathSettings['filename'];
+      // @todo Add language from entity for token/transliterate calls.
 
       // Replace tokens.
       $entity_type = $container_entity->getEntityTypeId();
       $data = array($entity_type => $container_entity, 'file' => $file_entity);
-      $path = $this->tokenService->tokenReplace($tokenized_path, $data);
-      $filename = $this->tokenService->tokenReplace($tokenized_filename, $data);
+      $path = $this->token->replace($tokenized_path, $data);
+      $filename = $this->token->replace($tokenized_filename, $data);
 
       // Transliterate.
       if ($this->fieldPathSettings['path_options']['transliterate_path']) {
-        $path = $this->transliterateService->transliterate($path);
+        $path = $this->transliteration->transliterate($path);
       }
 
       if ($this->fieldPathSettings['name_options']['transliterate_filename']) {
-        $filename = $this->transliterateService->transliterate($filename);
+        $filename = $this->transliteration->transliterate($filename);
       }
 
       // Clean string to remove URL unfriendly characters.

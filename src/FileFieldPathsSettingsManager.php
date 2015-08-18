@@ -1,23 +1,51 @@
 <?php
 
+/**
+ * @file
+ * Contains \Drupal\filefield_paths\FileFieldPathsSettingsManager.
+ */
+
 namespace Drupal\filefield_paths;
 
+use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 
-
+/**
+ * Class FileFieldPathsSettingsManager provides altering of field form.
+ *
+ * @todo Field and field storage alterations should live in separate places.
+ */
 class FileFieldPathsSettingsManager {
-  protected $cleanService;
-  protected $tokenService;
-  protected $transliterateService;
-  protected $fieldPathSettings;
 
-  public function __construct(FileFieldPathsClean $clean,
-                              FileFieldPathsToken $token,
-                              FileFieldPathsTransliterate $transliterate) {
+  /**
+   * The module handler.
+   *
+   * @var \Drupal\Core\Extension\ModuleHandlerInterface
+   */
+  protected $moduleHandler;
+
+
+  /**
+   * The string cleaning manager.
+   *
+   * @todo Get rid of.
+   *
+   * @var \Drupal\filefield_paths\FileFieldPathsClean
+   */
+  protected $cleanService;
+
+  /**
+   * Constructs a FileFieldPathsSettingsManager object.
+   *
+   * @param \Drupal\filefield_paths\FileFieldPathsClean $clean
+   *   The string cleaning manager.
+   * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
+   *   The module handler.
+   */
+  public function __construct(ModuleHandlerInterface $module_handler, FileFieldPathsClean $clean) {
+    $this->moduleHandler = $module_handler;
     $this->cleanService = $clean;
-    $this->tokenService = $token;
-    $this->transliterateService = $transliterate;
   }
 
   /**
@@ -47,10 +75,9 @@ class FileFieldPathsSettingsManager {
         '#type' => 'checkbox',
         '#title' => t('Enable File (Field) Paths?'),
         '#default_value' => $default,
-        '#weight' => -10,
       );
 
-      // @TODO: Hiding directory field doesn't work.
+      // @TODO: Hiding directory field doesn't work. Move to field settings alter.
       // Hide standard File directory field.
       $form['field']['settings']['file_directory']['#states'] = array(
         '#states' => array(
@@ -60,8 +87,12 @@ class FileFieldPathsSettingsManager {
         ),
       );
 
-      // Token browser.
-      $form['field']['third_party_settings']['filefield_paths']['token_tree'] = $this->tokenService->tokenBrowser();
+      if ($this->moduleHandler->moduleExists('token')) {
+        // Build a token browser.
+        $form['field']['third_party_settings']['filefield_paths']['token_tree'] = [
+          '#theme' => 'token_tree_link',
+        ];
+      }
 
       // File path.
       $default = isset($defaults['filepath']) ? $defaults['filepath'] : '';
@@ -151,7 +182,7 @@ class FileFieldPathsSettingsManager {
    * @return array
    */
   protected function getStringCleanElement($setting, $default) {
-    if (\Drupal::moduleHandler()->moduleExists('pathauto')) {
+    if ($this->moduleHandler->moduleExists('pathauto')) {
       $description = t('Cleanup %setting using <a href="@pathauto">Pathauto settings</a>.', array(
         '%setting' => $setting,
         '@pathauto' => Url::fromRoute('pathauto.settings.form')->toString()));
@@ -179,7 +210,7 @@ class FileFieldPathsSettingsManager {
    * @return array
    */
   protected function getTransliterationElement($setting, $default) {
-    if (\Drupal::moduleHandler()->moduleExists('transliteration')) {
+    if ($this->moduleHandler->moduleExists('transliteration')) {
       $description = t('Provides one-way string transliteration (romanization) and cleans the %setting during upload by replacing unwanted characters.', array('%setting' => $setting));
     }
     else {

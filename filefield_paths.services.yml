@@ -1,0 +1,15 @@
+services:
+  filefield_paths.clean:
+    class: Drupal\filefield_paths\FileFieldPathsClean
+  filefield_paths.token:
+    class: Drupal\filefield_paths\FileFieldPathsToken
+  filefield_paths.transliterate:
+    class: Drupal\filefield_paths\FileFieldPathsTransliterate
+  filefield_paths.manager:
+    class: Drupal\filefield_paths\FileFieldPathsManager
+    arguments: ['@filefield_paths.clean', '@filefield_paths.token', '@filefield_paths.transliterate']
+  filefield_paths.settings_manager:
+    class: Drupal\filefield_paths\FileFieldPathsSettingsManager
+    arguments: ['@filefield_paths.clean', '@filefield_paths.token', '@filefield_paths.transliterate']
+  filefield_paths.batch_updater:
+    class: Drupal\filefield_paths\FileFieldPathsBatchUpdater

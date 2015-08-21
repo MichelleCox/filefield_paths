@@ -1,0 +1,5 @@
+name: 'File (Field) Paths'
+description: 'Adds improved token based file sorting and renaming functionalities.'
+package: Fields
+core: 8.x
+type: module
